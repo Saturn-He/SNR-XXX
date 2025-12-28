@@ -14,6 +14,9 @@ Prms.sigmak2 = 10^(-12); sigmak2 = Prms.sigmak2; %%% communication noise
 Prms.L = 1024; L = Prms.L; %%% number of collected samples
 Prms.Nmax = 100; Nmax = Prms.Nmax;  %%% maximum iterations
 Prms.res_th = 5e-4; %%% convergence tolerance
+Prms.use_hybrid = false; %%% set true to enable hybrid beamforming
+Prms.Nrf = 4; %%% number of RF chains for hybrid beamforming
+Prms.hybrid_maxiter = 20; %%% max iterations for hybrid decomposition
 %%%% channel settings
 drt = 3; %%% distance of RIS-target
 dg = 50; %%% distance of BS-RIS
@@ -105,7 +108,13 @@ for sim = 1:1:N_sim
         gammat_index
         gammat = Gammat_dB_range(gammat_index); Prms.gammat = gammat;
 
-        [W_my,phi_my,sr_my,gammat_my] = get_W_phi_SNR(Prms,Channel,phi_CG0,sqrt(P)*[W_CG0 zeros(M,M)]);
+        if Prms.use_hybrid
+            W0 = sqrt(P)*[W_CG0 zeros(M,M)];
+            [F_RF0,F_BB0,~] = get_initial_hybrid_W(W0,Prms.Nrf);
+            [W_my,~,~,phi_my,sr_my,gammat_my] = get_W_phi_SNR_hybrid(Prms,Channel,phi_CG0,F_RF0,F_BB0);
+        else
+            [W_my,phi_my,sr_my,gammat_my] = get_W_phi_SNR(Prms,Channel,phi_CG0,sqrt(P)*[W_CG0 zeros(M,M)]);
+        end
         SR_my(gammat_index) = SR_my(gammat_index) + sr_my(end);
         % Gammat_my(gammat_index) = Gammat_my(gammat_index) + gammat_my;
 
